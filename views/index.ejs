@@ -19,6 +19,14 @@
         width: 600px;
         justify-content: center;
         align-items: center;
+        position: relative;
+      }
+      .dowm {
+        position: absolute;
+        right: 26px;
+        top: 30px;
+        font-size: 14px;
+        z-index: 99;
       }
       .upload {
         height: 240px;
@@ -34,6 +42,9 @@
   <body>
     <div id="app">
       <el-card class="box-card">
+        <span class="dowm" @click="downLoad()"
+          ><el-link>下载模板</el-link></span
+        >
         <el-tabs v-model="activeName">
           <el-tab-pane label="数据筛选" name="first">
             <!-- 上传 -->
@@ -66,9 +77,9 @@
                     <el-form-item prop="date1">
                       <el-date-picker
                         type="datetime"
-                        placeholder="选择最后上传时间"
+                        placeholder="选择时间-当前时间（间隔）"
                         v-model="ruleForm.date"
-                        style="width: 100%"
+                        style="width: 260px"
                         value-format="yyyy-MM-dd HH:mm:ss"
                       ></el-date-picker>
                     </el-form-item>
@@ -76,9 +87,30 @@
                 </el-form-item>
                 <el-form-item label="运营商" prop="type">
                   <el-checkbox-group v-model="ruleForm.type">
-                    <el-checkbox label="中国移动" name="type"></el-checkbox>
-                    <el-checkbox label="中国联通" name="type"></el-checkbox>
-                    <el-checkbox label="中国电信" name="type"></el-checkbox>
+                    <el-tooltip
+                      class="item"
+                      effect="dark"
+                      content="编码：898600、898602、898604、898607"
+                      placement="top-start"
+                    >
+                      <el-checkbox label="中国移动" name="type"></el-checkbox>
+                    </el-tooltip>
+                    <el-tooltip
+                      class="item"
+                      effect="dark"
+                      content="编码：898601、898606、898609"
+                      placement="top-start"
+                    >
+                      <el-checkbox label="中国联通" name="type"></el-checkbox>
+                    </el-tooltip>
+                    <el-tooltip
+                      class="item"
+                      effect="dark"
+                      content="编码：898603、898611"
+                      placement="top-start"
+                    >
+                      <el-checkbox label="中国电信" name="type"></el-checkbox>
+                    </el-tooltip>
                   </el-checkbox-group>
                 </el-form-item>
                 <el-form-item>
@@ -129,106 +161,117 @@
 <script src="https://unpkg.com/element-ui/lib/index.js"></script>
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <script>
-    const app = new Vue({
-      el: "#app",
-      data: {
-        ruleForm: {
-          date: "",
-          type: [],
-        },
-        rules: {
-          date: [
-            {
-              type: "date",
-              required: true,
-              message: "请选择最后上传时间",
-              trigger: "change",
-            },
-          ],
-          type: [
-            {
-              type: "array",
-              required: true,
-              message: "请至少选择一个运营商",
-              trigger: "change",
-            },
-          ],
-        },
-        fileName: "", // 文件名称
-        activeName: "first", // 当前页
-        fileNames: [], // 文件上传列表
+  const app = new Vue({
+    el: "#app",
+    data: {
+      ruleForm: {
+        date: "",
+        type: [],
       },
-      methods: {
-        // 提交表单
-        submitForm(formName) {
-          this.$refs[formName].validate((valid) => {
-            if (valid) {
-              // alert("submit!");
-              this.downloadExcel();
-            } else {
-              console.log("error submit!!");
-              return false;
-            }
-          });
-        },
-
-        // 重置表单
-        resetForm(formName) {
-          this.$refs[formName].resetFields();
-        },
-
-        // 上传成功
-        handleUploadSuccess(res) {
-          this.fileName = res.fileName;
-          console.log(this.fileName, "this.fileName");
-        },
-
-        // 下载接口
-        downloadExcel() {
-          window.location.href = `/download?fileName=${this.fileName}&lastData=${
-            this.ruleForm.date
-          }&moduleNumber=${this.ruleForm.type.toString()}`;
-        },
-
-        // 对比并导出
-        compare() {
-          this.$refs.upload.submit();
-        },
-
-        commonExportData(res) {
-          //转换成二进制对象
-          const type = 'application/x-download;charset=UTF-8';
-          const blob = new Blob([res], { type: type });
-          const downloadElement = document.createElement('a');
-
-          //二进制对象转换成url地址
-          const href = window.URL.createObjectURL(blob);
-          downloadElement.href = href;
-          //获取headers中的filename文件名
-          downloadElement.download = 'result.xlsx';
-          //下载
-          document.body.appendChild(downloadElement);
-          downloadElement.click();
-          //下载完成移除元素
-          document.body.removeChild(downloadElement);
-          //释放掉blob对象
-          window.URL.revokeObjectURL(href);
-        },
-
-        twoUploadSuccess(res){
-          // console.log(res.fileName[0].originalname,'文件命名');
-          this.fileNames.push(res.fileName[0].originalname)
-          // 调用对比接口
-          if(this.fileNames.length == 2){
-            axios({
-              method:'get',
-              url:`/twoDownload?firstData=${this.fileNames[0]}&secondData=${this.fileNames[1]}`,
-              responseType: 'blob'
-            }).then(res =>{
-              this.commonExportData(res.data)
-            })
+      rules: {
+        date: [
+          {
+            type: "date",
+            required: true,
+            message: "请选择最后上传时间",
+            trigger: "change",
+          },
+        ],
+        type: [
+          {
+            type: "array",
+            required: true,
+            message: "请至少选择一个运营商",
+            trigger: "change",
+          },
+        ],
+      },
+      fileName: "", // 文件名称
+      activeName: "first", // 当前页
+      fileNames: [], // 文件上传列表
+    },
+    methods: {
+      // 提交表单
+      submitForm(formName) {
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            // alert("submit!");
+            this.downloadExcel();
+          } else {
+            console.log("error submit!!");
+            return false;
           }
+        });
+      },
+
+      // 重置表单
+      resetForm(formName) {
+        this.$refs[formName].resetFields();
+      },
+
+      // 上传成功
+      handleUploadSuccess(res) {
+        this.fileName = res.fileName;
+        console.log(this.fileName, "this.fileName");
+      },
+
+      // 下载接口
+      downloadExcel() {
+        window.location.href = `/download?fileName=${this.fileName}&lastData=${
+          this.ruleForm.date
+        }&moduleNumber=${this.ruleForm.type.toString()}`;
+      },
+
+      // 对比并导出
+      compare() {
+        this.$refs.upload.submit();
+      },
+
+      commonExportData(res) {
+        //转换成二进制对象
+        const type = "application/x-download;charset=UTF-8";
+        const blob = new Blob([res], { type: type });
+        const downloadElement = document.createElement("a");
+
+        //二进制对象转换成url地址
+        const href = window.URL.createObjectURL(blob);
+        downloadElement.href = href;
+        //获取headers中的filename文件名
+        downloadElement.download = "result.xlsx";
+        //下载
+        document.body.appendChild(downloadElement);
+        downloadElement.click();
+        //下载完成移除元素
+        document.body.removeChild(downloadElement);
+        //释放掉blob对象
+        window.URL.revokeObjectURL(href);
+      },
+
+      twoUploadSuccess(res) {
+        // console.log(res.fileName[0].originalname,'文件命名');
+        this.fileNames.push(res.fileName[0].originalname);
+        // 调用对比接口
+        if (this.fileNames.length == 2) {
+          axios({
+            method: "get",
+            url: `/twoDownload?firstData=${this.fileNames[0]}&secondData=${this.fileNames[1]}`,
+            responseType: "blob",
+          }).then((res) => {
+            this.commonExportData(res.data);
+          });
         }
       },
-    });
+
+      downLoad() {
+        // console.log('点击了');
+        let a = document.createElement("a");
+        a.href = "模板.xlsx";
+        a.download = "文件模板.xlsx";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      },
+    },
+  });
 </script>
